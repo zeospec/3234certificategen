@@ -435,7 +435,7 @@ class CertificateGenerator {
             const pdf = await this.createPDF(canvas);
             
             // Download the PDF
-            const fileName = `Certificate_${this.fullNameInput.value.trim().replace(/\s+/g, '_')}.pdf`;
+            const fileName = `RISE_${this.fullNameInput.value.trim().replace(/\s+/g, '_')}.pdf`;
             pdf.save(fileName);
             
         } catch (error) {

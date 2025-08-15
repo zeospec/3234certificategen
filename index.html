@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Certificate Generator</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Alex+Brush&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Optimized font loading - only load what we need -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Fira+Sans:wght@400&display=swap" rel="stylesheet">
+    <!-- Preload critical resources -->
+    <link rel="preload" href="certificate_template.png" as="image">
 </head>
 <body>
     <div class="container">
@@ -17,7 +22,7 @@
         <main>
             <div class="form-section">
                 <form id="certificateForm">
-                                        <div class="input-group">
+                    <div class="input-group">
                         <label for="fullName">Full Name</label>
                         <input 
                             type="text" 
@@ -25,10 +30,9 @@
                             name="fullName" 
                             placeholder="Enter your full name"
                             required
+                            autocomplete="name"
                         >
                     </div>
-                    
-
                     
                     <div class="input-group">
                         <label for="clubName">Rotaract Club Name</label>
@@ -37,10 +41,9 @@
                             id="clubName" 
                             name="clubName" 
                             placeholder="Enter Rotaract Club name"
+                            autocomplete="organization"
                         >
                     </div>
-                    
-
                     
                     <button type="submit" id="generateBtn">
                         <span class="btn-text">Generate Certificate</span>
@@ -56,7 +59,7 @@
                 <h3>Certificate Preview</h3>
                 <div class="certificate-preview">
                     <div class="preview-container">
-                        <img id="certificateTemplate" src="certificate_template.png" alt="Certificate Template">
+                        <img id="certificateTemplate" src="certificate_template.png" alt="Certificate Template" loading="eager">
                         <div id="nameOverlay" class="name-overlay"></div>
                         <div id="clubOverlay" class="club-overlay"></div>
                     </div>
@@ -78,9 +81,16 @@
         <div id="errorMessage" class="error-message" style="display: none;"></div>
     </div>
 
-    <!-- External Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="script.js"></script>
+    <!-- Optimized external libraries - load async and only when needed -->
+    <script>
+        // Inline critical initialization
+        window.APP_CONFIG = {
+            isDev: false, // Set to true for development
+            maxFontSize: 16,
+            minFontSize: 8,
+            debounceDelay: 150
+        };
+    </script>
+    <script src="script.js" defer></script>
 </body>
 </html>

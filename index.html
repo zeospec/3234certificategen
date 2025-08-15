@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Generator</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Alex+Brush&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Certificate Generator</h1>
+            <p>Generate professional certificates with your name</p>
+        </header>
+
+        <main>
+            <div class="form-section">
+                <form id="certificateForm">
+                                        <div class="input-group">
+                        <label for="fullName">Full Name</label>
+                        <input 
+                            type="text" 
+                            id="fullName" 
+                            name="fullName" 
+                            placeholder="Enter your full name"
+                            required
+                        >
+                    </div>
+                    
+
+                    
+                    <div class="input-group">
+                        <label for="clubName">Rotaract Club Name</label>
+                        <input 
+                            type="text" 
+                            id="clubName" 
+                            name="clubName" 
+                            placeholder="Enter Rotaract Club name"
+                        >
+                    </div>
+                    
+
+                    
+                    <button type="submit" id="generateBtn">
+                        <span class="btn-text">Generate Certificate</span>
+                        <span class="btn-loading" style="display: none;">
+                            <div class="spinner"></div>
+                            Generating...
+                        </span>
+                    </button>
+                </form> 
+            </div>
+
+            <div class="preview-section">
+                <h3>Certificate Preview</h3>
+                <div class="certificate-preview">
+                    <div class="preview-container">
+                        <img id="certificateTemplate" src="certificate_template.png" alt="Certificate Template">
+                        <div id="nameOverlay" class="name-overlay"></div>
+                        <div id="clubOverlay" class="club-overlay"></div>
+                    </div>
+                </div>
+                
+                <div id="downloadSection" class="download-section" style="display: none;">
+                    <button id="downloadBtn" class="download-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7,10 12,15 17,10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Download PDF
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+    </div>
+
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

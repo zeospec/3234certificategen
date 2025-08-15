@@ -1,14 +1,51 @@
-// Optimized Certificate Generator - Performance Focused
+// Secure Certificate Generator - Security Enhanced
 class CertificateGenerator {
     constructor() {
-        this.config = window.APP_CONFIG || { isDev: false, maxFontSize: 16, minFontSize: 8, debounceDelay: 150 };
+        // Secure configuration with fallback
+        this.config = this.getSecureConfig();
         this.elements = {};
         this.cache = new Map();
         this.debounceTimer = null;
         this.isGenerating = false;
         this.libraries = {};
+        this.securityToken = this.generateSecurityToken();
         
         this.init();
+    }
+
+    getSecureConfig() {
+        const defaultConfig = {
+            isDev: false,
+            maxFontSize: 16,
+            minFontSize: 8,
+            debounceDelay: 150,
+            maxRetries: 3,
+            timeout: 10000,
+            security: {
+                maxInputLength: 150,
+                allowedCharacters: /^[A-Za-z\s]+$/,
+                sanitizeOutput: true
+            }
+        };
+
+        // Validate and sanitize configuration
+        if (window.APP_CONFIG && typeof window.APP_CONFIG === 'object') {
+            return Object.freeze({
+                ...defaultConfig,
+                ...window.APP_CONFIG,
+                security: {
+                    ...defaultConfig.security,
+                    ...(window.APP_CONFIG.security || {})
+                }
+            });
+        }
+
+        return Object.freeze(defaultConfig);
+    }
+
+    generateSecurityToken() {
+        // Generate a simple security token for internal validation
+        return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     }
 
     init() {
@@ -96,11 +133,46 @@ class CertificateGenerator {
     }
 
     updatePreview() {
-        const name = this.elements.fullName.value.trim();
-        const clubName = this.elements.clubName.value.trim();
+        const name = this.sanitizeInput(this.elements.fullName.value);
+        const clubName = this.sanitizeInput(this.elements.clubName.value);
         
         this.updateOverlay(this.elements.nameOverlay, name);
         this.updateOverlay(this.elements.clubOverlay, clubName);
+    }
+
+    sanitizeInput(input) {
+        if (typeof input !== 'string') return '';
+        
+        // Remove any potential script tags and dangerous content
+        let sanitized = input
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+            .replace(/javascript:/gi, '')
+            .replace(/on\w+\s*=/gi, '')
+            .trim();
+        
+        // Limit length
+        if (sanitized.length > this.config.security.maxInputLength) {
+            sanitized = sanitized.substring(0, this.config.security.maxInputLength);
+        }
+        
+        return sanitized;
+    }
+
+    validateInputSecurity(input) {
+        if (typeof input !== 'string') return false;
+        
+        // Check for dangerous patterns
+        const dangerousPatterns = [
+            /<script/i,
+            /javascript:/i,
+            /on\w+\s*=/i,
+            /data:text\/html/i,
+            /vbscript:/i,
+            /expression\(/i
+        ];
+        
+        return !dangerousPatterns.some(pattern => pattern.test(input));
     }
 
     updateOverlay(element, text) {
@@ -174,11 +246,17 @@ class CertificateGenerator {
     }
 
     validateForm() {
-        const name = this.elements.fullName.value.trim();
-        const clubName = this.elements.clubName.value.trim();
+        const name = this.sanitizeInput(this.elements.fullName.value);
+        const clubName = this.sanitizeInput(this.elements.clubName.value);
         
         // Clear previous errors
         this.hideError();
+        
+        // Security validation
+        if (!this.validateInputSecurity(name) || !this.validateInputSecurity(clubName)) {
+            this.showError('Invalid input detected. Please check your input and try again.');
+            return false;
+        }
         
         // Validate name
         if (!name) {
@@ -187,7 +265,7 @@ class CertificateGenerator {
             return false;
         }
         
-        if (!/^[A-Za-z\s]+$/.test(name)) {
+        if (!this.config.security.allowedCharacters.test(name)) {
             this.showError('Name should contain only letters and spaces');
             this.elements.fullName.focus();
             return false;
@@ -218,8 +296,8 @@ class CertificateGenerator {
             return false;
         }
         
-        if (clubName.length > 150) {
-            this.showError('Club name should not exceed 150 characters');
+        if (clubName.length > this.config.security.maxInputLength) {
+            this.showError(`Club name should not exceed ${this.config.security.maxInputLength} characters`);
             this.elements.clubName.focus();
             return false;
         }
@@ -307,7 +385,12 @@ class CertificateGenerator {
         try {
             this.isGenerating = true;
             this.elements.downloadBtn.disabled = true;
-            this.elements.downloadBtn.innerHTML = '<div class="spinner"></div> Generating PDF...';
+            this.elements.downloadBtn.innerHTML = '';
+        const spinner = document.createElement('div');
+        spinner.className = 'spinner';
+        const text = document.createTextNode(' Generating PDF...');
+        this.elements.downloadBtn.appendChild(spinner);
+        this.elements.downloadBtn.appendChild(text);
 
             await this.loadLibraries();
             
@@ -337,14 +420,35 @@ class CertificateGenerator {
         } finally {
             this.isGenerating = false;
             this.elements.downloadBtn.disabled = false;
-            this.elements.downloadBtn.innerHTML = `
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7,10 12,15 17,10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                Download PDF Certificate
-            `;
+            this.elements.downloadBtn.innerHTML = '';
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '20');
+            svg.setAttribute('height', '20');
+            svg.setAttribute('viewBox', '0 0 24 24');
+            svg.setAttribute('fill', 'none');
+            svg.setAttribute('stroke', 'currentColor');
+            svg.setAttribute('stroke-width', '2');
+            
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4');
+            
+            const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+            polyline.setAttribute('points', '7,10 12,15 17,10');
+            
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', '12');
+            line.setAttribute('y1', '15');
+            line.setAttribute('x2', '12');
+            line.setAttribute('y2', '3');
+            
+            svg.appendChild(path);
+            svg.appendChild(polyline);
+            svg.appendChild(line);
+            
+            const text = document.createTextNode(' Download PDF Certificate');
+            
+            this.elements.downloadBtn.appendChild(svg);
+            this.elements.downloadBtn.appendChild(text);
         }
     }
     
@@ -375,9 +479,20 @@ class CertificateGenerator {
     }
     
     generateFileName() {
-        const name = this.elements.fullName.value.trim().replace(/[^A-Za-z\s]/g, '').replace(/\s+/g, '_');
+        const sanitizedName = this.sanitizeInput(this.elements.fullName.value)
+            .replace(/[^A-Za-z\s]/g, '')
+            .replace(/\s+/g, '_')
+            .substring(0, 50); // Limit filename length
+        
         const timestamp = new Date().toISOString().slice(0, 10);
-        return `RISE_${name}_${timestamp}.pdf`;
+        const safeFileName = `RISE_${sanitizedName}_${timestamp}.pdf`;
+        
+        // Additional security check for filename
+        if (!/^[A-Za-z0-9_-]+\.pdf$/.test(safeFileName)) {
+            return `RISE_Certificate_${timestamp}.pdf`;
+        }
+        
+        return safeFileName;
     }
     
     getErrorMessage(error) {
@@ -425,12 +540,62 @@ class CertificateGenerator {
 
     loadScript(src) {
         return new Promise((resolve, reject) => {
+            // Validate script source
+            if (!this.isValidScriptSource(src)) {
+                reject(new Error('Invalid script source'));
+                return;
+            }
+            
             const script = document.createElement('script');
             script.src = src;
-            script.onload = () => resolve(window.jspdf || window.html2canvas);
-            script.onerror = reject;
+            script.crossOrigin = 'anonymous';
+            script.integrity = this.getScriptIntegrity(src);
+            
+            script.onload = () => {
+                // Validate that the expected library is loaded
+                if (window.jspdf) {
+                    resolve(window.jspdf);
+                } else {
+                    reject(new Error('Library not loaded properly'));
+                }
+            };
+            
+            script.onerror = () => reject(new Error('Failed to load script'));
+            
+            // Set timeout for script loading
+            const timeout = setTimeout(() => {
+                reject(new Error('Script loading timeout'));
+            }, this.config.timeout);
+            
+            script.onload = () => {
+                clearTimeout(timeout);
+                if (window.jspdf) {
+                    resolve(window.jspdf);
+                } else {
+                    reject(new Error('Library not loaded properly'));
+                }
+            };
+            
             document.head.appendChild(script);
         });
+    }
+
+    isValidScriptSource(src) {
+        // Only allow specific trusted sources
+        const allowedSources = [
+            'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
+        ];
+        
+        return allowedSources.includes(src);
+    }
+
+    getScriptIntegrity(src) {
+        // Return integrity hash for known scripts (in production, these should be actual hashes)
+        const integrityHashes = {
+            'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js': ''
+        };
+        
+        return integrityHashes[src] || '';
     }
 
     async generateCanvas() {
@@ -446,8 +611,19 @@ class CertificateGenerator {
 
     async createCanvasWithTemplate() {
         const templateImage = this.elements.certificateTemplate;
-        const name = this.elements.fullName.value.trim();
-        const clubName = this.elements.clubName.value.trim();
+        
+        // Security validation
+        if (!templateImage || !templateImage.complete || templateImage.naturalHeight === 0) {
+            throw new Error('Template image not loaded');
+        }
+        
+        const name = this.sanitizeInput(this.elements.fullName.value);
+        const clubName = this.sanitizeInput(this.elements.clubName.value);
+        
+        // Validate input parameters
+        if (!this.validateInputSecurity(name) || !this.validateInputSecurity(clubName)) {
+            throw new Error('Invalid input detected');
+        }
         
         // Create canvas with template image dimensions
         const canvas = document.createElement('canvas');

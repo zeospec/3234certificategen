@@ -233,7 +233,7 @@ class CertificateGenerator {
         tempElement.style.overflow = 'hidden';
         
         // Start with maximum font size and work down
-        let fontSize = 18; // Maximum font size is now 18px
+        let fontSize = 16; // Maximum font size is now 16px
         const minFontSize = 8;
         
         // Binary search for optimal font size that fits in single line
@@ -300,13 +300,13 @@ class CertificateGenerator {
         const maxWidth = canvasWidth * 0.75; // 75% of canvas width
         
         // Start with maximum font size
-        let fontSize = 18; // Maximum font size is now 18px
+        let fontSize = 16; // Maximum font size is now 16px
         const minFontSize = 8;
         
         // Create a temporary canvas to measure text
         const tempCanvas = document.createElement('canvas');
         const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.font = '400 18px Fira Sans';
+        tempCtx.font = '400 16px Fira Sans';
         
         // Binary search for optimal font size that fits in single line
         let low = minFontSize;

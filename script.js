@@ -196,16 +196,17 @@ class CertificateGenerator {
     }
 
     calculateFontSize(text) {
-        // Simplified font size calculation - no binary search needed
-        const maxWidth = this.getContainerWidth() * 0.75;
+        // Enhanced font size calculation with increased width allowance
+        const maxWidth = this.getContainerWidth() * 0.95; // Increased from 0.75 to 0.95
         const baseSize = this.config.maxFontSize;
         
-        // Simple linear calculation based on text length
+        // Calculate font size based on text length with 2x allowance
         const textLength = text.length;
         let fontSize = baseSize;
         
-        if (textLength > 20) {
-            fontSize = Math.max(this.config.minFontSize, baseSize - (textLength - 20) * 0.3);
+        // Only start reducing font size after 2x the typical name length (40 characters)
+        if (textLength > 40) {
+            fontSize = Math.max(this.config.minFontSize, baseSize - (textLength - 40) * 0.25);
         }
         
         // Quick width check using cached measurement
@@ -703,14 +704,14 @@ class CertificateGenerator {
         const clubName = this.elements.clubName.value.trim();
         
         if (name) {
-            const fontSize = Math.min(16, 800 / name.length * 2);
+            const fontSize = Math.min(16, 800 / name.length * 3); // Increased multiplier for more width
             ctx.font = `${fontSize}px Fira Sans`;
             ctx.fillStyle = '#000000';
             ctx.fillText(name, canvas.width / 2, canvas.height * 0.49);
         }
         
         if (clubName) {
-            const fontSize = Math.min(16, 800 / clubName.length * 2);
+            const fontSize = Math.min(16, 800 / clubName.length * 3); // Increased multiplier for more width
             ctx.font = `${fontSize}px Fira Sans`;
             ctx.fillStyle = '#000000';
             ctx.fillText(clubName, canvas.width / 2, canvas.height * 0.53);

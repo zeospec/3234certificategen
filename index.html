@@ -3,82 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Certificate Generator</title>
+    <meta name="description" content="Generate your RISE Certificate for Annual District Rotaract Assembly - Professional certificate generator for District 3234">
+    <meta name="keywords" content="certificate generator, rotaract, RISE, district 3234, participation certificate">
+    <meta name="author" content="District Rotaract Council - District 3234">
+    <meta name="theme-color" content="#FFD700">
+    <title>RISE Certificate Generator - District Rotaract Assembly</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎖️</text></svg>">
+    
     <link rel="stylesheet" href="style.css">
     <!-- Optimized font loading - only load what we need -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Fira+Sans:wght@400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fira+Sans:wght@400;600&display=swap" rel="stylesheet">
     <!-- Preload critical resources -->
     <link rel="preload" href="certificate_template.png" as="image">
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>Certificate Generator</h1>
-            <p>Generate professional certificates with your name</p>
+        <header class="hero-header" role="banner">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="rise-logo" role="img" aria-label="RISE Above Logo">
+                        <div class="sun-icon" aria-hidden="true">☀️</div>
+                        <div class="rise-text">
+                            <span class="rise-main">RISE</span>
+                            <span class="rise-sub">ABOVE</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="title-section">
+                    <h1>Certificate Generator</h1>
+                    <p class="subtitle">Annual District Rotaract Assembly - RISE</p>
+                    <p class="description">Generate your participation certificate with ease</p>
+                </div>
+            </div>
         </header>
 
-        <main>
+        <main class="main-content" role="main">
             <div class="form-section">
-                <form id="certificateForm">
+                <div class="section-header">
+                    <h2>Certificate Details</h2>
+                    <p>Enter your information to generate your certificate</p>
+                </div>
+                
+                <form id="certificateForm" role="form" aria-label="Certificate generation form">
                     <div class="input-group">
-                        <label for="fullName">Full Name</label>
+                        <label for="fullName">
+                            <span class="label-icon" aria-hidden="true">👤</span>
+                            Full Name <span class="required" aria-label="required">*</span>
+                        </label>
                         <input 
                             type="text" 
                             id="fullName" 
                             name="fullName" 
-                            placeholder="Enter your full name"
+                            placeholder="Enter your full name as it should appear on certificate"
                             required
                             autocomplete="name"
+                            aria-describedby="nameHelp"
+                            maxlength="100"
+                            pattern="[A-Za-z\s]+"
+                            title="Please enter only letters and spaces"
                         >
+                        <div id="nameHelp" class="help-text" style="display: none;">
+                            Enter your full name using only letters and spaces
+                        </div>
                     </div>
                     
                     <div class="input-group">
-                        <label for="clubName">Rotaract Club Name</label>
+                        <label for="clubName">
+                            <span class="label-icon" aria-hidden="true">🏛️</span>
+                            Rotaract Club Name <span class="required" aria-label="required">*</span>
+                        </label>
                         <input 
                             type="text" 
                             id="clubName" 
                             name="clubName" 
-                            placeholder="Enter Rotaract Club name"
+                            placeholder="Enter your Rotaract Club name"
+                            required
                             autocomplete="organization"
+                            aria-describedby="clubHelp"
+                            maxlength="150"
                         >
+                        <div id="clubHelp" class="help-text" style="display: none;">
+                            Enter your Rotaract Club name
+                        </div>
                     </div>
                     
-                    <button type="submit" id="generateBtn">
-                        <span class="btn-text">Generate Certificate</span>
-                        <span class="btn-loading" style="display: none;">
-                            <div class="spinner"></div>
-                            Generating...
+                    <button type="submit" id="generateBtn" class="primary-btn" aria-describedby="generateHelp">
+                        <span class="btn-text">
+                            <span class="btn-icon" aria-hidden="true">🎖️</span>
+                            Generate Certificate
+                        </span>
+                        <span class="btn-loading" style="display: none;" aria-hidden="true">
+                            <div class="spinner" role="status" aria-label="Generating certificate"></div>
+                            Generating Certificate...
                         </span>
                     </button>
+                    <div id="generateHelp" class="help-text">
+                        Click to generate your certificate with the entered information
+                    </div>
                 </form> 
             </div>
 
             <div class="preview-section">
-                <h3>Certificate Preview</h3>
+                <div class="section-header">
+                    <h2>Certificate Preview</h2>
+                    <p>See how your certificate will look</p>
+                </div>
+                
                 <div class="certificate-preview">
-                    <div class="preview-container">
-                        <img id="certificateTemplate" src="certificate_template.png" alt="Certificate Template" loading="eager">
-                        <div id="nameOverlay" class="name-overlay"></div>
-                        <div id="clubOverlay" class="club-overlay"></div>
+                    <div class="preview-container" role="img" aria-label="Certificate preview">
+                        <img id="certificateTemplate" src="certificate_template.png" alt="RISE Certificate Template" loading="eager">
+                        <div id="nameOverlay" class="name-overlay" aria-hidden="true"></div>
+                        <div id="clubOverlay" class="club-overlay" aria-hidden="true"></div>
                     </div>
                 </div>
                 
-                <div id="downloadSection" class="download-section" style="display: none;">
-                    <button id="downloadBtn" class="download-btn">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7,10 12,15 17,10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                        Download PDF
-                    </button>
+                <div id="downloadSection" class="download-section" style="display: none;" role="region" aria-label="Download section">
+                    <div class="download-content">
+                        <div class="success-message" role="status" aria-live="polite">
+                            <span class="success-icon" aria-hidden="true">✅</span>
+                            <span>Certificate generated successfully!</span>
+                        </div>
+                        <button id="downloadBtn" class="download-btn" aria-describedby="downloadHelp">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7,10 12,15 17,10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download PDF Certificate
+                        </button>
+                        <div id="downloadHelp" class="help-text">
+                            Click to download your certificate as a PDF file
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
 
-        <div id="errorMessage" class="error-message" style="display: none;"></div>
+        <footer class="app-footer" role="contentinfo">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <p>District Rotaract Council - Rotary International District 3234</p>
+                    <p>Annual District Rotaract Assembly - RISE</p>
+                </div>
+            </div>
+        </footer>
+
+        <div id="errorMessage" class="error-message" style="display: none;" role="alert" aria-live="assertive"></div>
+        
+        <!-- Loading overlay for better UX -->
+        <div id="loadingOverlay" class="loading-overlay" style="display: none;" role="status" aria-label="Processing">
+            <div class="loading-content">
+                <div class="loading-spinner"></div>
+                <p>Processing your certificate...</p>
+            </div>
+        </div>
     </div>
 
     <!-- Optimized external libraries - load async and only when needed -->
@@ -88,7 +170,9 @@
             isDev: false, // Set to true for development
             maxFontSize: 16,
             minFontSize: 8,
-            debounceDelay: 150
+            debounceDelay: 150,
+            maxRetries: 3,
+            timeout: 10000
         };
     </script>
     <script src="script.js" defer></script>

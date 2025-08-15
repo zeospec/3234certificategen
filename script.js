@@ -30,7 +30,10 @@ class CertificateGenerator {
             nameOverlay: '#nameOverlay',
             clubOverlay: '#clubOverlay',
             btnText: '#generateBtn .btn-text',
-            btnLoading: '#generateBtn .btn-loading'
+            btnLoading: '#generateBtn .btn-loading',
+            loadingOverlay: '#loadingOverlay',
+            nameHelp: '#nameHelp',
+            clubHelp: '#clubHelp'
         };
 
         for (const [key, selector] of Object.entries(selectors)) {
@@ -42,10 +45,24 @@ class CertificateGenerator {
         this.elements.form.addEventListener('submit', e => this.handleSubmit(e));
         this.elements.downloadBtn.addEventListener('click', () => this.downloadPDF());
         
-        // Optimized input handling
+        // Enhanced input handling with validation
         const inputs = [this.elements.fullName, this.elements.clubName];
         inputs.forEach(input => {
-            input.addEventListener('input', () => this.debounce(() => this.updatePreview(), this.config.debounceDelay));
+            input.addEventListener('input', () => {
+                this.debounce(() => this.updatePreview(), this.config.debounceDelay);
+                this.validateInput(input);
+            });
+            
+            input.addEventListener('focus', () => this.showHelp(input));
+            input.addEventListener('blur', () => this.hideHelp(input));
+        });
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                this.elements.form.dispatchEvent(new Event('submit'));
+            }
         });
     }
 
@@ -96,6 +113,14 @@ class CertificateGenerator {
         element.style.fontSize = `${fontSize}px`;
         element.style.color = '#000000'; // Ensure standard black color
         element.textContent = text;
+        
+        // Add subtle animation for better UX without affecting positioning
+        element.style.opacity = '0';
+        element.style.transition = 'opacity 0.3s ease';
+        
+        setTimeout(() => {
+            element.style.opacity = '1';
+        }, 50);
     }
 
     calculateFontSize(text) {
@@ -150,18 +175,98 @@ class CertificateGenerator {
 
     validateForm() {
         const name = this.elements.fullName.value.trim();
+        const clubName = this.elements.clubName.value.trim();
+        
+        // Clear previous errors
+        this.hideError();
+        
+        // Validate name
         if (!name) {
-            this.showError('Please enter a valid name');
+            this.showError('Please enter your full name');
+            this.elements.fullName.focus();
             return false;
         }
-        this.hideError();
+        
+        if (!/^[A-Za-z\s]+$/.test(name)) {
+            this.showError('Name should contain only letters and spaces');
+            this.elements.fullName.focus();
+            return false;
+        }
+        
+        if (name.length < 2) {
+            this.showError('Name should be at least 2 characters long');
+            this.elements.fullName.focus();
+            return false;
+        }
+        
+        if (name.length > 100) {
+            this.showError('Name should not exceed 100 characters');
+            this.elements.fullName.focus();
+            return false;
+        }
+        
+        // Validate club name (mandatory)
+        if (!clubName) {
+            this.showError('Please enter your Rotaract Club name');
+            this.elements.clubName.focus();
+            return false;
+        }
+        
+        if (clubName.length < 2) {
+            this.showError('Club name should be at least 2 characters long');
+            this.elements.clubName.focus();
+            return false;
+        }
+        
+        if (clubName.length > 150) {
+            this.showError('Club name should not exceed 150 characters');
+            this.elements.clubName.focus();
+            return false;
+        }
+        
         return true;
+    }
+    
+    validateInput(input) {
+        const value = input.value.trim();
+        const isName = input.id === 'fullName';
+        
+        if (isName && value) {
+            if (!/^[A-Za-z\s]+$/.test(value)) {
+                input.setCustomValidity('Please use only letters and spaces');
+                input.classList.add('invalid');
+            } else {
+                input.setCustomValidity('');
+                input.classList.remove('invalid');
+            }
+        }
+    }
+    
+    showHelp(input) {
+        const helpId = input.id === 'fullName' ? 'nameHelp' : 'clubHelp';
+        const helpElement = this.elements[helpId];
+        if (helpElement) {
+            helpElement.style.display = 'block';
+        }
+    }
+    
+    hideHelp(input) {
+        const helpId = input.id === 'fullName' ? 'nameHelp' : 'clubHelp';
+        const helpElement = this.elements[helpId];
+        if (helpElement) {
+            helpElement.style.display = 'none';
+        }
     }
 
     setLoading(isLoading) {
         this.elements.generateBtn.disabled = isLoading;
         this.elements.btnText.style.display = isLoading ? 'none' : 'block';
         this.elements.btnLoading.style.display = isLoading ? 'flex' : 'none';
+        
+        // Show/hide loading overlay for better UX
+        if (this.elements.loadingOverlay) {
+            this.elements.loadingOverlay.style.display = isLoading ? 'flex' : 'none';
+        }
     }
 
     showError(message) {
@@ -176,6 +281,19 @@ class CertificateGenerator {
     showDownloadSection() {
         this.elements.downloadSection.style.display = 'block';
         this.elements.downloadSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        
+        // Add success animation
+        const downloadContent = this.elements.downloadSection.querySelector('.download-content');
+        if (downloadContent) {
+            downloadContent.style.opacity = '0';
+            downloadContent.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                downloadContent.style.transition = 'all 0.5s ease';
+                downloadContent.style.opacity = '1';
+                downloadContent.style.transform = 'translateY(0)';
+            }, 100);
+        }
     }
 
     async generateCertificate() {
@@ -192,14 +310,29 @@ class CertificateGenerator {
             this.elements.downloadBtn.innerHTML = '<div class="spinner"></div> Generating PDF...';
 
             await this.loadLibraries();
-            const canvas = await this.generateCanvas();
-            const pdf = await this.createPDF(canvas);
             
-            const fileName = `RISE_${this.elements.fullName.value.trim().replace(/\s+/g, '_')}.pdf`;
+            // Generate canvas with template and text
+            const canvas = await this.retryOperation(
+                () => this.generateCanvas(),
+                this.config.maxRetries,
+                'Canvas generation'
+            );
+            
+            const pdf = await this.retryOperation(
+                () => this.createPDF(canvas),
+                this.config.maxRetries,
+                'PDF creation'
+            );
+            
+            const fileName = this.generateFileName();
             pdf.save(fileName);
             
+            // Show success feedback
+            this.showSuccess('Certificate downloaded successfully!');
+            
         } catch (error) {
-            this.showError('Failed to create PDF. Please try again.');
+            const errorMessage = this.getErrorMessage(error);
+            this.showError(errorMessage);
             if (this.config.isDev) console.error('PDF error:', error);
         } finally {
             this.isGenerating = false;
@@ -210,21 +343,84 @@ class CertificateGenerator {
                     <polyline points="7,10 12,15 17,10"></polyline>
                     <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                Download PDF
+                Download PDF Certificate
             `;
         }
     }
+    
+    async retryOperation(operation, maxRetries, operationName) {
+        let lastError;
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                return await Promise.race([
+                    operation(),
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Operation timeout')), this.config.timeout)
+                    )
+                ]);
+            } catch (error) {
+                lastError = error;
+                if (this.config.isDev) {
+                    console.warn(`${operationName} attempt ${attempt} failed:`, error);
+                }
+                
+                if (attempt < maxRetries) {
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                }
+            }
+        }
+        
+        throw new Error(`${operationName} failed after ${maxRetries} attempts: ${lastError.message}`);
+    }
+    
+    generateFileName() {
+        const name = this.elements.fullName.value.trim().replace(/[^A-Za-z\s]/g, '').replace(/\s+/g, '_');
+        const timestamp = new Date().toISOString().slice(0, 10);
+        return `RISE_${name}_${timestamp}.pdf`;
+    }
+    
+    getErrorMessage(error) {
+        if (error.message.includes('timeout')) {
+            return 'Operation timed out. Please check your internet connection and try again.';
+        }
+        if (error.message.includes('Canvas generation')) {
+            return 'Failed to generate certificate. Please refresh the page and try again.';
+        }
+        if (error.message.includes('PDF creation')) {
+            return 'Failed to create PDF. Please try again.';
+        }
+        return 'An unexpected error occurred. Please try again.';
+    }
+    
+    showSuccess(message) {
+        // Create a temporary success message
+        const successDiv = document.createElement('div');
+        successDiv.className = 'success-message-temp';
+        successDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            z-index: 10000;
+            animation: slideInRight 0.3s ease;
+        `;
+        successDiv.textContent = message;
+        document.body.appendChild(successDiv);
+        
+        setTimeout(() => {
+            successDiv.remove();
+        }, 3000);
+    }
 
     async loadLibraries() {
-        if (this.libraries.jspdf && this.libraries.html2canvas) return;
+        if (this.libraries.jspdf) return;
 
-        const [jsPDF, html2canvas] = await Promise.all([
-            this.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'),
-            this.loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js')
-        ]);
-
+        const jsPDF = await this.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
         this.libraries.jspdf = jsPDF;
-        this.libraries.html2canvas = html2canvas;
     }
 
     loadScript(src) {
@@ -238,49 +434,73 @@ class CertificateGenerator {
     }
 
     async generateCanvas() {
-        const container = document.querySelector('.preview-container');
-        const templateLoaded = this.elements.certificateTemplate.complete && 
-                              this.elements.certificateTemplate.naturalHeight > 0;
+        const templateImage = this.elements.certificateTemplate;
+        const templateLoaded = templateImage.complete && templateImage.naturalHeight > 0;
 
         if (templateLoaded) {
-            // Temporarily remove styling that affects PDF generation
-            const originalPadding = container.style.padding;
-            const originalMargin = container.style.margin;
-            const originalBorder = container.style.border;
-            const originalBorderRadius = container.style.borderRadius;
-            const originalOverflow = container.style.overflow;
-            
-            container.style.padding = '0';
-            container.style.margin = '0';
-            container.style.border = 'none';
-            container.style.borderRadius = '0'; // Remove rounded corners
-            container.style.overflow = 'visible'; // Remove overflow hidden
-            
-            try {
-                return await this.libraries.html2canvas(container, {
-                    useCORS: true,
-                    allowTaint: true,
-                    backgroundColor: '#ffffff',
-                    scale: 2,
-                    logging: false,
-                    width: container.offsetWidth,
-                    height: container.offsetHeight,
-                    scrollX: 0,
-                    scrollY: 0,
-                    removeContainer: false
-                });
-            } finally {
-                // Restore original styles
-                container.style.padding = originalPadding;
-                container.style.margin = originalMargin;
-                container.style.border = originalBorder;
-                container.style.borderRadius = originalBorderRadius;
-                container.style.overflow = originalOverflow;
-            }
+            return await this.createCanvasWithTemplate();
         } else {
             return this.createFallbackCanvas();
         }
     }
+
+    async createCanvasWithTemplate() {
+        const templateImage = this.elements.certificateTemplate;
+        const name = this.elements.fullName.value.trim();
+        const clubName = this.elements.clubName.value.trim();
+        
+        // Create canvas with template image dimensions
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size to match template image
+        canvas.width = templateImage.naturalWidth;
+        canvas.height = templateImage.naturalHeight;
+        
+        // Enable image smoothing for better quality
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        
+        // Draw the template image
+        ctx.drawImage(templateImage, 0, 0, canvas.width, canvas.height);
+        
+        // Calculate font sizes using the exact same logic as preview
+        const baseNameFontSize = this.calculateFontSize(name);
+        const baseClubFontSize = this.calculateFontSize(clubName);
+        
+        // Scale font sizes to match the canvas dimensions
+        const containerWidth = this.getContainerWidth();
+        const scaleFactor = canvas.width / containerWidth;
+        const nameFontSize = Math.round(baseNameFontSize * scaleFactor);
+        const clubFontSize = Math.round(baseClubFontSize * scaleFactor);
+        
+        // Set font properties
+        ctx.font = `${nameFontSize}px Fira Sans`;
+        ctx.fillStyle = '#000000';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Calculate positions based on the same percentages as CSS
+        const nameY = canvas.height * 0.484; // 48.4% from top
+        const clubY = canvas.height * 0.555; // 55.5% from top
+        const centerX = canvas.width / 2;
+        
+        // Draw name text
+        if (name) {
+            ctx.font = `${nameFontSize}px Fira Sans`;
+            ctx.fillText(name, centerX, nameY);
+        }
+        
+        // Draw club name text
+        if (clubName) {
+            ctx.font = `${clubFontSize}px Fira Sans`;
+            ctx.fillText(clubName, centerX, clubY);
+        }
+        
+        return canvas;
+    }
+
+
 
     createFallbackCanvas() {
         const canvas = document.createElement('canvas');
@@ -346,8 +566,10 @@ class CertificateGenerator {
         const pdf = new jsPDF(orientation, 'mm', pdfDimensions);
         const imgData = canvas.toDataURL('image/png', 0.95);
         
-        // Add image to fill the entire PDF page (0, 0 coordinates with full width/height)
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+        // Add image with slight overflow to ensure no white space at edges
+        // Use negative margins to extend beyond PDF boundaries
+        const overflow = 0.5; // 0.5mm overflow on each side
+        pdf.addImage(imgData, 'PNG', -overflow, -overflow, imgWidth + (overflow * 2), imgHeight + (overflow * 2), undefined, 'FAST');
         
         return pdf;
     }
